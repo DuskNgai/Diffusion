@@ -1,0 +1,3 @@
+[submodule "coach_pl"]
+	path = coach_pl
+	url = https://github.com/DuskNgai/coach-pl.git
