@@ -1,0 +1,78 @@
+_BASE_: ../../coach_pl/configuration/base.yaml
+
+DATALOADER:
+  BATCH_SIZE: 64
+  NUM_WORKERS: 8
+  PIN_MEMORY: True
+  DROP_LAST: False
+  PERSISTENT_WORKERS: True
+
+DATASET:
+  NAME: CIFAR10Dataset
+  ROOT: null
+
+  TRANSFORM:
+    NAME: build_cifar_transform
+
+MODEL:
+  NAME: EDMPrecond
+  DEVICE: cuda
+
+  CRITERION:
+    NAME: EDMCriterion
+    TIMESTEP_MEAN: -1.2
+    TIMESTEP_STD: 1.2
+    PREDICTION_TYPE: sample
+
+  IMG_SIZE: 32
+  IN_CHANS: 3
+  LABEL_DIM: 0
+  SIGMA_DATA: 0.5
+  MODEL_TYPE: DhariwalUNet
+  MODEL_KWARGS:
+    model_channels: 192
+    channel_mult: [1, 2, 3, 4]
+
+MODULE:
+  NAME: TrainingModule
+  COMPILE: True
+
+  OPTIMIZER:
+    NAME: AdamW
+    BASE_LR: 1.0e-3
+    PARAMS:
+      WEIGHT_DECAY: 0.05
+      BETAS: [0.9, 0.999]
+
+  SCHEDULER:
+    NAME: cosine
+    STEP_ON_EPOCHS: False
+    PARAMS:
+      WARMUP_LR: 1.0e-6
+      WARMUP_EPOCHS: 40
+
+TRAINER:
+  STRATEGY: ddp         # Set to `auto`, `ddp`, `deepspeed_stage_2`, `deepspeed_stage_3` ...
+  MIXED_PRECISION: True
+  CHECKPOINT:
+    EVERY_N_EPOCHS: 20  # Each time before a checkpoint is saved, the model will be evaluated on the validation set
+
+    SAVE_BEST: False    # If True, monitor will be required
+    MONITOR: null
+
+  MAX_EPOCHS: 200       # If profiler is enabled, this will be *automatically* set to 1
+  LOG_EVERY_N_STEPS: 20
+  ACCUMULATE_GRAD_BATCHES: 1
+
+  CLIP_GRAD:
+    ALGORITHM: null
+    VALUE: null
+
+  DETERMINISTIC: False  # Set to True to enable cudnn.deterministic
+  BENCHMARK: True       # Set to True to enable cudnn.benchmark
+  PROFILER: null        # Set to `simple` or `advanced` or `pytorch` to enable profiling
+  DETECT_ANOMALY: False # Set to True to enable anomaly detection
+  SYNC_BATCHNORM: False # Set to True to enable sync batchnorm
+
+SEED: 0
+OUTPUT_DIR: null
