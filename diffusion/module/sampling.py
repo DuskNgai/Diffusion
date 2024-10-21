@@ -11,7 +11,7 @@ import torch
 from coach_pl.configuration import configurable
 from coach_pl.model import build_model
 from coach_pl.module import MODULE_REGISTRY
-from scheduling import GeneralContinuousDiffusionScheduler
+from sampler import GeneralContinuousDiffusionScheduler
 
 __all__ = ["SamplingModule"]
 

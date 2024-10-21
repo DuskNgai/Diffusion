@@ -11,7 +11,7 @@ from diffusers.schedulers.scheduling_utils import SchedulerMixin, SchedulerOutpu
 class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
     """
     Implements general sampler for continuous diffusion models, whose forward process is defined as:
-        `x_t = s(t) * x_0 + sigma(t) * noise`.
+        `x_t = scale(t) * x_0 + sigma(t) * noise`.
 
     This model inherits from [`SchedulerMixin`] and [`ConfigMixin`]. Check the superclass documentation for the generic
     methods the library implements for all schedulers such as loading and saving.
@@ -24,11 +24,11 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
         sigma_data (`float`, defaults to 1.0):
             The (estimated) standard deviation of the data.
             E.g., the normal distribution `N(mean_data, sigma_data ** 2 * I)` that is closest to the data distribution.
-        scale (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
-            The scale function for the noisy data. This was set to s(t) = 1.
-        sigma (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
+        scale_fn (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
+            The scale function for the noisy data. This was set to scale(t) = 1.
+        sigma_fn (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
             The noise level for the noisy data. This was set to sigma(t) = t.
-        nsr_inv (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
+        nsr_inv_fn (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
             The inverse of the noise-to-signal ratio (nsr) function, which is nsr(t) = sigma(t) / scale(t).
             This was set to nsr_inv(nsr) = nsr^{-1}(nsr) = nsr.
         prediction_type (`str`, defaults to `epsilon`):
@@ -47,16 +47,16 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
         t_min: float,
         t_max: float,
         sigma_data: float = 1.0,
-        scale: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
-        sigma: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: t,
-        nsr_inv: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda nsr: nsr,
+        scale_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
+        sigma_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: t,
+        nsr_inv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda nsr: nsr,
         prediction_type: str = "epsilon",
         algorithm_type: str = "ode",
         timestep_schedule: str = "linear_lognsr",
         **kwargs,
     ):
-        assert scale(0.0) == 1.0, "The scale function should be 1.0 at t = 0."
-        assert sigma(0.0) == 0.0, "The sigma function should be 0.0 at t = 0."
+        assert scale_fn(0.0) == 1.0, "The scale function should be 1.0 at t = 0."
+        assert sigma_fn(0.0) == 0.0, "The sigma function should be 0.0 at t = 0."
         assert prediction_type in ["epsilon", "sample", "velocity"], f"Prediction type {prediction_type} is not supported."
         assert algorithm_type in ["ode", "sde"], f"Algorithm type {algorithm_type} is not supported."
 
@@ -69,7 +69,7 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
     @property
     def init_noise_sigma(self) -> float:
         # standard deviation of the initial noise distribution
-        return (self.config.sigma(self.config.t_max) ** 2 + (self.config.scale(self.config.t_max) * self.config.sigma_data) ** 2) ** 0.5
+        return (self.config.sigma_fn(self.config.t_max) ** 2 + (self.config.scale_fn(self.config.t_max) * self.config.sigma_data) ** 2) ** 0.5
 
     @property
     def step_index(self) -> Optional[int]:
@@ -135,33 +135,33 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
 
     def _compute_linear_lognsr_timesteps(self, ramp: torch.Tensor) -> torch.Tensor:
         """Implementation closely follows k-diffusion."""
-        nsr_min = self.config.sigma(self.config.t_min) / self.config.scale(self.config.t_min)
-        nsr_max = self.config.sigma(self.config.t_max) / self.config.scale(self.config.t_max)
+        nsr_min = self.config.sigma_fn(self.config.t_min) / self.config.scale_fn(self.config.t_min)
+        nsr_max = self.config.sigma_fn(self.config.t_max) / self.config.scale_fn(self.config.t_max)
 
         log_nsr_min = math.log(nsr_min)
         log_nsr_max = math.log(nsr_max)
         nsr = torch.exp(log_nsr_max + ramp * (log_nsr_min - log_nsr_max))
-        return self.config.nsr_inv(nsr)
+        return self.config.nsr_inv_fn(nsr)
 
     def _compute_cosine_lognsr_timesteps(self, ramp: torch.Tensor) -> torch.Tensor:
-        nsr_min = self.config.sigma(self.config.t_min) / self.config.scale(self.config.t_min)
-        nsr_max = self.config.sigma(self.config.t_max) / self.config.scale(self.config.t_max)
+        nsr_min = self.config.sigma_fn(self.config.t_min) / self.config.scale_fn(self.config.t_min)
+        nsr_max = self.config.sigma_fn(self.config.t_max) / self.config.scale_fn(self.config.t_max)
 
         atan_nsr_min = math.atan(nsr_min)
         atan_nsr_max = math.atan(nsr_max)
         nsr = torch.tan(atan_nsr_max + ramp * (atan_nsr_min - atan_nsr_max))
-        return self.config.nsr_inv(nsr)
+        return self.config.nsr_inv_fn(nsr)
 
     def _compute_power_lognsr_timesteps(self, ramp: torch.Tensor) -> torch.Tensor:
         """Construct timesteps the noise schedule of Karras et al. (2022)."""
-        nsr_min = self.config.sigma(self.config.t_min) / self.config.scale(self.config.t_min)
-        nsr_max = self.config.sigma(self.config.t_max) / self.config.scale(self.config.t_max)
+        nsr_min = self.config.sigma_fn(self.config.t_min) / self.config.scale_fn(self.config.t_min)
+        nsr_max = self.config.sigma_fn(self.config.t_max) / self.config.scale_fn(self.config.t_max)
 
         rho = 7
         root_nsr_min = nsr_min ** (1 / rho)
         root_nsr_max = nsr_max ** (1 / rho)
         nsr = (root_nsr_max + ramp * (root_nsr_min - root_nsr_max)) ** rho
-        return self.config.nsr_inv(nsr)
+        return self.config.nsr_inv_fn(nsr)
 
     def _compute_uniform_timesteps(self, ramp: torch.Tensor) -> torch.Tensor:
         ts = self.config.t_max + ramp * (self.config.t_min - self.config.t_max)
@@ -186,8 +186,8 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
                 A previous instance of a sample created by the diffusion process.
         """
         t, u = self.timesteps[self.step_index + 1] if self.step_index < self.num_inference_steps - 1 else 0.0, self.timesteps[self.step_index]
-        scale_t, scale_u = self.config.scale(t), self.config.scale(u)
-        sigma_t, sigma_u = self.config.sigma(t), self.config.sigma(u)
+        scale_t, scale_u = self.config.scale_fn(t), self.config.scale_fn(u)
+        sigma_t, sigma_u = self.config.sigma_fn(t), self.config.sigma_fn(u)
         x_u = sample
 
         if self.config.algorithm_type == "ode":
@@ -314,11 +314,11 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
         i.e., `x_t = s(t) * x_0 + sigma(t) * noise`.
 
         Args:
-            samples (`torch.Tensor`):
+            sample (`torch.Tensor`):
                 The samples to add noise to.
-            noises (`torch.Tensor`):
+            noise (`torch.Tensor`):
                 The noises tensor for the forward diffusion process.
-            timestepw (`torch.Tensor`):
+            timestep (`torch.Tensor`):
                 The timestepw for the forward diffusion process.
 
         Returns:
@@ -328,7 +328,7 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
 
         while timestep.dim() < sample.dim():
             timestep = timestep.unsqueeze(-1)
-        scale = self.config.scale(timestep)
-        sigma = self.config.sigma(timestep)
+        scale = self.config.scale_fn(timestep)
+        sigma = self.config.sigma_fn(timestep)
 
         return scale * sample + sigma * noise

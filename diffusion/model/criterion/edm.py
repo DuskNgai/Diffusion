@@ -1,12 +1,11 @@
-from typing import Any, Callable
-
-import torch
+from typing import Any
 
 from omegaconf import DictConfig
+import torch
 
 from coach_pl.configuration import configurable
 from coach_pl.model import CRITERION_REGISTRY
-from scheduling import SCHEDULER_FORMULATION_TABLE
+from sampler import SAMPLER_FORMULATION_TABLE
 from .base import DiffusionCriterion
 
 __all__ = ["EDMCriterion"]
@@ -17,58 +16,49 @@ class EDMCriterion(DiffusionCriterion):
     """
     Criterion for EDM Diffusion model.
     """
-
     @configurable
     def __init__(self,
-        timestep_mean: float,
-        timestep_std: float,
         sigma_data: float,
-        scale: Callable[[float | torch.Tensor], float | torch.Tensor] = SCHEDULER_FORMULATION_TABLE["EDM"]["scale"],
-        scale_deriv: Callable[[float | torch.Tensor], float | torch.Tensor] = SCHEDULER_FORMULATION_TABLE["EDM"]["scale_deriv"],
-        sigma: Callable[[float | torch.Tensor], float | torch.Tensor] = SCHEDULER_FORMULATION_TABLE["EDM"]["sigma"],
-        sigma_deriv: Callable[[float | torch.Tensor], float | torch.Tensor] = SCHEDULER_FORMULATION_TABLE["EDM"]["sigma_deriv"],
-        prediction_type: str = "sample",
+        prediction_type: str,
     ) -> None:
         super().__init__(
             sigma_data=sigma_data,
-            scale=scale,
-            scale_deriv=scale_deriv,
-            sigma=sigma,
-            sigma_deriv=sigma_deriv,
+            scale_fn=SAMPLER_FORMULATION_TABLE["EDM"]["scale_fn"],
+            scale_deriv_fn=SAMPLER_FORMULATION_TABLE["EDM"]["scale_deriv_fn"],
+            sigma_fn=SAMPLER_FORMULATION_TABLE["EDM"]["sigma_fn"],
+            sigma_deriv_fn=SAMPLER_FORMULATION_TABLE["EDM"]["sigma_deriv_fn"],
             prediction_type=prediction_type,
         )
-
-        self.timestep_mean = timestep_mean
-        self.timestep_std = timestep_std
 
     @classmethod
     def from_config(cls, cfg: DictConfig) -> dict[str, Any]:
         return {
-            "timestep_mean": cfg.MODEL.CRITERION.TIMESTEP_MEAN,
-            "timestep_std": cfg.MODEL.CRITERION.TIMESTEP_STD,
             "sigma_data": cfg.MODEL.SIGMA_DATA,
             "prediction_type": cfg.MODEL.CRITERION.PREDICTION_TYPE,
         }
 
-    def sample_timesteps(self, samples: torch.Tensor) -> torch.Tensor:
-        timesteps = torch.exp(torch.randn(samples.shape[0], device=samples.device) * self.timestep_std + self.timestep_mean)
-        while timesteps.dim() < samples.dim():
-            timesteps = timesteps.unsqueeze(-1)
-        return timesteps
-
-    def forward(self,
-        predictions: torch.Tensor,
-        samples: torch.Tensor,
-        noises: torch.Tensor,
-        timesteps: torch.Tensor
+    def forward_sample(self,
+        prediction: torch.Tensor,
+        sample: torch.Tensor,
+        noise: torch.Tensor,
+        timestep: torch.Tensor
     ) -> torch.Tensor:
-        if self.prediction_type == "sample":
-            weights = (self.sigma(timesteps) ** 2 + self.sigma_data ** 2) / ((self.sigma(timesteps) * self.sigma_data) ** 2)
-            return (weights * (predictions - samples).square()).mean()
-        elif self.prediction_type == "epsilon":
-            weights = (self.sigma(timesteps) ** 2 + self.sigma_data ** 2) / (self.sigma_data ** 2)
-            return (weights * (predictions - noises).square()).mean()
-        elif self.prediction_type == "velocity":
-            weights = None
-            velocities = self.scale_deriv(timesteps) * samples + self.sigma_deriv(timesteps) * noises
-            return (weights * (predictions - velocities).square()).mean()
+        weight = (self.sigma_fn(timestep) ** 2 + self.sigma_data ** 2) / ((self.sigma_fn(timestep) * self.sigma_data) ** 2)
+        return (weight * (prediction - sample).square()).mean()
+
+    def forward_epsilon(self,
+        prediction: torch.Tensor,
+        sample: torch.Tensor,
+        noise: torch.Tensor,
+        timestep: torch.Tensor
+    ) -> torch.Tensor:
+        weight = (self.sigma_fn(timestep) ** 2 + self.sigma_data ** 2) / (self.sigma_data ** 2)
+        return (weight * (prediction - noise).square()).mean()
+
+    def forward_velocity(self,
+        prediction: torch.Tensor,
+        sample: torch.Tensor,
+        noise: torch.Tensor,
+        timestep: torch.Tensor
+    ) -> torch.Tensor:
+        raise NotImplementedError

@@ -9,35 +9,59 @@ __all__ = ["DiffusionCriterion"]
 
 class DiffusionCriterion(nn.Module, metaclass=ABCMeta):
     """
-    
+    The base class for diffusion model criterion.
     """
     def __init__(self,
         sigma_data: float,
-        scale: Callable[[float | torch.Tensor], float | torch.Tensor],
-        scale_deriv: Callable[[float | torch.Tensor], float | torch.Tensor],
-        sigma: Callable[[float | torch.Tensor], float | torch.Tensor],
-        sigma_deriv: Callable[[float | torch.Tensor], float | torch.Tensor],
-        prediction_type: str = "sample",
+        scale_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
+        scale_deriv_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
+        sigma_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
+        sigma_deriv_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
+        prediction_type: str,
     ) -> None:
         super().__init__()
 
         self.sigma_data = sigma_data
-        self.scale = scale
-        self.scale_deriv = scale_deriv
-        self.sigma = sigma
-        self.sigma_deriv = sigma_deriv
+        self.scale_fn = scale_fn
+        self.scale_deriv_fn = scale_deriv_fn
+        self.sigma_fn = sigma_fn
+        self.sigma_deriv_fn = sigma_deriv_fn
+
         self.prediction_type = prediction_type
-        assert self.prediction_type in ["sample", "epsilon", "velocity"]
+        assert self.prediction_type in ["sample", "epsilon", "velocity"], f"Unknown prediction type: {self.prediction_type}"
+
+    def forward(self,
+        prediction: torch.Tensor,
+        sample: torch.Tensor,
+        noise: torch.Tensor,
+        timestep: torch.Tensor
+    ) -> torch.Tensor:
+        fn = getattr(self, f"forward_{self.prediction_type}")
+        return fn(prediction, sample, noise, timestep)
 
     @abstractmethod
-    def sample_timesteps(self, samples: torch.Tensor) -> torch.Tensor:
+    def forward_sample(self,
+        prediction: torch.Tensor,
+        sample: torch.Tensor,
+        noise: torch.Tensor,
+        timestep: torch.Tensor
+    ) -> torch.Tensor:
         raise NotImplementedError
 
-    def add_noise(self, samples: torch.Tensor, noises: torch.Tensor, timesteps: torch.Tensor) -> torch.Tensor:
-        scales = self.scale(timesteps)
-        sigmas = self.sigma(timesteps)
-        return scales * samples + sigmas * noises, scales, sigmas
+    @abstractmethod
+    def forward_epsilon(self,
+        prediction: torch.Tensor,
+        sample: torch.Tensor,
+        noise: torch.Tensor,
+        timestep: torch.Tensor
+    ) -> torch.Tensor:
+        raise NotImplementedError
 
     @abstractmethod
-    def forward(self, samples: torch.Tensor, noises: torch.Tensor, timesteps: torch.Tensor) -> torch.Tensor:
+    def forward_velocity(self,
+        prediction: torch.Tensor,
+        sample: torch.Tensor,
+        noise: torch.Tensor,
+        timestep: torch.Tensor
+    ) -> torch.Tensor:
         raise NotImplementedError

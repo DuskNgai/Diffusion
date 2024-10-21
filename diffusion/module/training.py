@@ -11,26 +11,30 @@ import torch
 from coach_pl.configuration import configurable
 from coach_pl.model import build_model, build_criterion
 from coach_pl.module import MODULE_REGISTRY
-
+from diffusion.model import build_noise_scheduler, NoiseScheduler
 
 __all__ = ["TrainingModule"]
 
 
 @MODULE_REGISTRY.register()
 class TrainingModule(LightningModule):
-
+    """
+    Training module for diffusion model.
+    """
     @configurable
     def __init__(self,
         model: torch.nn.Module,
         criterion: torch.nn.Module,
+        noise_schedule: NoiseScheduler,
         cfg: DictConfig,
     ) -> None:
         super().__init__()
 
         self.model = torch.compile(model) if cfg.MODULE.COMPILE else model
         self.criterion = torch.compile(criterion) if cfg.MODULE.COMPILE else criterion
+        self.noise_schedule = torch.compile(noise_schedule) if cfg.MODULE.COMPILE else noise_schedule
 
-        self.batch_size = cfg.DATALOADER.BATCH_SIZE
+        self.batch_size = cfg.DATALOADER.TRAIN.BATCH_SIZE
 
         self.base_lr = cfg.MODULE.OPTIMIZER.BASE_LR
         self.optimizer_name = cfg.MODULE.OPTIMIZER.NAME
@@ -41,13 +45,14 @@ class TrainingModule(LightningModule):
         self.scheduler_params["num_epochs"] = cfg.TRAINER.MAX_EPOCHS
         self.step_on_epochs = cfg.MODULE.SCHEDULER.STEP_ON_EPOCHS
 
-        self.save_hyperparameters(ignore=["model", "criterion"])
+        self.save_hyperparameters(ignore=["model", "criterion", "noise_schedule"])
 
     @classmethod
     def from_config(cls, cfg: DictConfig) -> dict[str, Any]:
         return {
             "model": build_model(cfg),
             "criterion": build_criterion(cfg),
+            "noise_schedule": build_noise_scheduler(cfg),
             "cfg": cfg,
         }
 
@@ -87,14 +92,13 @@ class TrainingModule(LightningModule):
             scheduler.step_update(self.global_step, metric)
 
     def forward(self, batch: Any) -> torch.Tensor:
-        images, lables = batch
-        noises = torch.randn_like(images)
-        timesteps = self.criterion.sample_timesteps(images)
+        image, label = batch
+        noise = torch.randn_like(image)
+        timestep = self.noise_schedule.sample_timestep(image)
 
-        noisy_images, scales, simgas = self.criterion.add_noise(images, noises, timesteps)
-        outputs = self.model(noisy_images, scales, simgas, lables)
-        loss = self.criterion(outputs, images, noises, timesteps)
-
+        noisy, scale, sigma = self.noise_schedule.add_noise(image, noise, timestep)
+        output = self.model(noisy, scale, sigma, label)
+        loss = self.criterion(output, image, noise, timestep)
         return loss
 
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:

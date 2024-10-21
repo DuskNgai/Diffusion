@@ -11,7 +11,7 @@ from diffusers.utils.torch_utils import randn_tensor
 import torch
 import torch.nn as nn
 
-from scheduling import GeneralContinuousDiffusionScheduler
+from sampler import GeneralContinuousDiffusionScheduler
 
 __all__ = [
     "GaussianModel",
@@ -68,11 +68,11 @@ class GaussianModelScheduler(GeneralContinuousDiffusionScheduler):
         t_min: float,
         t_max: float,
         sigma_data: float = 1.0,
-        scale: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
-        scale_deriv: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 0.0,
-        sigma: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: t,
-        sigma_deriv: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
-        nsr_inv: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda nsr: nsr,
+        scale_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
+        scale_deriv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 0.0,
+        sigma_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: t,
+        sigma_deriv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
+        nsr_inv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda nsr: nsr,
         prediction_type: str = "epsilon",
         algorithm_type: str = "ode",
         timestep_schedule: str = "linear_lognsr",
@@ -82,9 +82,9 @@ class GaussianModelScheduler(GeneralContinuousDiffusionScheduler):
             t_min=t_min,
             t_max=t_max,
             sigma_data=sigma_data,
-            scale=scale,
-            sigma=sigma,
-            nsr_inv=nsr_inv,
+            scale_fn=scale_fn,
+            sigma_fn=sigma_fn,
+            nsr_inv_fn=nsr_inv_fn,
             prediction_type=prediction_type,
             algorithm_type=algorithm_type,
             timestep_schedule=timestep_schedule,
