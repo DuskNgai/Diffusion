@@ -1,14 +1,14 @@
 import math
-from typing import Callable, Optional, Union
-
-import torch
+from typing import Optional, Union
 
 from diffusers.configuration_utils import ConfigMixin, register_to_config
 from diffusers.utils.torch_utils import randn_tensor
 from diffusers.schedulers.scheduling_utils import SchedulerMixin, SchedulerOutput
+import torch
 
+from sampler.formulation_table import FunctionType
 
-class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
+class GeneralContinuousTimeDiffusionScheduler(SchedulerMixin, ConfigMixin):
     """
     Implements general sampler for continuous diffusion models, whose forward process is defined as:
         `x_t = scale(t) * x_0 + sigma(t) * noise`.
@@ -24,11 +24,11 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
         sigma_data (`float`, defaults to 1.0):
             The (estimated) standard deviation of the training data.
             E.g., the normal distribution `N(mean_data, sigma_data ** 2 * I)` that is closest to the data distribution.
-        scale_fn (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
+        scale_fn (`FunctionType`):
             The scale function for the noisy data. This was set to scale(t) = 1.
-        sigma_fn (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
+        sigma_fn (`FunctionType`):
             The noise level for the noisy data. This was set to sigma(t) = t.
-        nsr_inv_fn (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
+        nsr_inv_fn (`FunctionType`):
             The inverse of the noise-to-signal ratio (nsr) function, which is nsr(t) = sigma(t) / scale(t).
             This was set to nsr_inv(nsr) = nsr^{-1}(nsr) = nsr.
         prediction_type (`str`, defaults to `epsilon`):
@@ -47,9 +47,9 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
         t_min: float,
         t_max: float,
         sigma_data: float = 1.0,
-        scale_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
-        sigma_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: t,
-        nsr_inv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda nsr: nsr,
+        scale_fn: FunctionType = lambda t: 1.0,
+        sigma_fn: FunctionType = lambda t: t,
+        nsr_inv_fn: FunctionType = lambda nsr: nsr,
         prediction_type: str = "epsilon",
         algorithm_type: str = "ode",
         timestep_schedule: str = "linear_lognsr",

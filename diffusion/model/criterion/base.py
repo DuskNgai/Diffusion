@@ -1,8 +1,9 @@
 from abc import ABCMeta, abstractmethod
-from typing import Callable
 
 import torch
 import torch.nn as nn
+
+from sampler import FunctionType
 
 __all__ = ["DiffusionCriterion"]
 
@@ -13,18 +14,18 @@ class DiffusionCriterion(nn.Module, metaclass=ABCMeta):
 
     Args:
         sigma_data (`float`): The (estimated) standard deviation of the training data.
-        scale_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The scale function for the noisy data.
-        scale_deriv_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The derivative of the scale function.
-        sigma_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The noise level for the noisy data.
-        sigma_deriv_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The derivative of the noise level.
+        scale_fn (`FunctionType`): The scale function for the noisy data.
+        scale_deriv_fn (`FunctionType`): The derivative of the scale function.
+        sigma_fn (`FunctionType`): The noise level for the noisy data.
+        sigma_deriv_fn (`FunctionType`): The derivative of the noise level.
         prediction_type (`str`): The type of prediction to make. One of "sample", "epsilon", or "velocity".
     """
     def __init__(self,
         sigma_data: float,
-        scale_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
-        scale_deriv_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
-        sigma_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
-        sigma_deriv_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
+        scale_fn: FunctionType,
+        scale_deriv_fn: FunctionType,
+        sigma_fn: FunctionType,
+        sigma_deriv_fn: FunctionType,
         prediction_type: str,
     ) -> None:
         super().__init__()

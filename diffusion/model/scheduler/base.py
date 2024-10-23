@@ -1,8 +1,9 @@
 from abc import ABCMeta, abstractmethod
-from typing import Callable
 
 import torch
 import torch.nn as nn
+
+from sampler import FunctionType
 
 __all__ = ["NoiseScheduler"]
 
@@ -14,10 +15,10 @@ class NoiseScheduler(nn.Module, metaclass=ABCMeta):
     """
     def __init__(self,
         sigma_data: float,
-        scale_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
-        scale_deriv_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
-        sigma_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
-        sigma_deriv_fn: Callable[[float | torch.Tensor], float | torch.Tensor],
+        scale_fn: FunctionType,
+        scale_deriv_fn: FunctionType,
+        sigma_fn: FunctionType,
+        sigma_deriv_fn: FunctionType,
     ) -> None:
         super().__init__()
 
@@ -28,7 +29,7 @@ class NoiseScheduler(nn.Module, metaclass=ABCMeta):
         self.sigma_deriv_fn = sigma_deriv_fn
 
     @abstractmethod
-    def sample_timestep(self, samples: torch.Tensor) -> torch.Tensor:
+    def sample_timestep(self, sample: torch.Tensor) -> torch.Tensor | torch.LongTensor:
         raise NotImplementedError
 
     def add_noise(self, sample: torch.Tensor, noise: torch.Tensor, timestep: torch.Tensor) -> torch.Tensor:

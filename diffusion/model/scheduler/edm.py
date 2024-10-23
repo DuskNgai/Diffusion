@@ -41,7 +41,7 @@ class EDMNoiseScheduler(NoiseScheduler):
             "sigma_data": cfg.MODEL.SIGMA_DATA,
         }
 
-    def sample_timestep(self, sample: torch.Tensor) -> torch.Tensor:
+    def sample_timestep(self, sample: torch.Tensor) -> torch.Tensor | torch.LongTensor:
         timestep = torch.exp(torch.randn(sample.shape[0], device=sample.device) * self.timestep_std + self.timestep_mean)
         while timestep.dim() < sample.dim():
             timestep = timestep.unsqueeze(-1)

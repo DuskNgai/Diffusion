@@ -30,3 +30,9 @@ python train.py \
 --num-nodes <NUM_NODES> \
 <KEY_TO_MODIFY> <VALUE_TO_MODIFY>
 ```
+
+We recommend naming the configuration file and output directory with the following format:
+```txt
+Configuration file: <MODEL_NAME>_<PREDICTION_TYPE>_<DATASET_NAME>.yaml
+Output directory: output/<MODEL_NAME>_<PREDICTION_TYPE>_<DATASET_NAME>
+```

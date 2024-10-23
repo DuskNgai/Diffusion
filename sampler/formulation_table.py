@@ -3,7 +3,9 @@ from typing import Callable
 import numpy as np
 import torch
 
-SAMPLER_FORMULATION_TABLE: dict[str, dict[str, Callable[[int | float | np.ndarray | torch.Tensor], int | float | np.ndarray | torch.Tensor]]] = {
+FunctionType = Callable[[int | float | np.ndarray | torch.Tensor], int | float | np.ndarray | torch.Tensor]
+
+SAMPLER_FORMULATION_TABLE: dict[str, dict[str, FunctionType]] = {
     # ----- VP SDE -----
     "DDPM": {
         "scale_fn": NotImplementedError,

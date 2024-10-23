@@ -1,6 +1,5 @@
 from pathlib import Path
 import sys
-from typing import Callable, Union
 
 sys.path.append(Path(__file__).resolve().parents[1].as_posix())
 
@@ -11,7 +10,7 @@ from diffusers.utils.torch_utils import randn_tensor
 import torch
 import torch.nn as nn
 
-from sampler import GeneralContinuousDiffusionScheduler
+from sampler import GeneralContinuousTimeDiffusionScheduler, FunctionType
 
 __all__ = [
     "GaussianModel",
@@ -62,17 +61,17 @@ class GaussianModel(ModelMixin, ConfigMixin):
         return score
 
 
-class GaussianModelScheduler(GeneralContinuousDiffusionScheduler):
+class GaussianModelScheduler(GeneralContinuousTimeDiffusionScheduler):
     @register_to_config
     def __init__(self,
         t_min: float,
         t_max: float,
         sigma_data: float = 1.0,
-        scale_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
-        scale_deriv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 0.0,
-        sigma_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: t,
-        sigma_deriv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda t: 1.0,
-        nsr_inv_fn: Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]] = lambda nsr: nsr,
+        scale_fn: FunctionType = lambda t: 1.0,
+        scale_deriv_fn: FunctionType = lambda t: 0.0,
+        sigma_fn: FunctionType = lambda t: t,
+        sigma_deriv_fn: FunctionType = lambda t: 1.0,
+        nsr_inv_fn: FunctionType = lambda nsr: nsr,
         prediction_type: str = "epsilon",
         algorithm_type: str = "ode",
         timestep_schedule: str = "linear_lognsr",
@@ -116,7 +115,11 @@ class GaussianModelPipeline(DiffusionPipeline):
         generator: torch.Generator | list[torch.Generator] | None = None
     ) -> torch.Tensor:
         # 0. Sample the initial noisy samples.
-        sample = randn_tensor((batch_size, 2), generator=generator, device=self.device) * self.scheduler.init_noise_sigma
+        sample = randn_tensor(
+            (batch_size, 2),
+            generator=generator,
+            device=self.device
+        ) * self.scheduler.init_noise_sigma
 
         # 1. Initialize the scheduler.
         self.scheduler.set_timesteps(num_inference_steps)

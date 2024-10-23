@@ -106,6 +106,26 @@ class GroupNorm(torch.nn.Module):
         return x
 
 #----------------------------------------------------------------------------
+# Attention weight computation, i.e., softmax(Q^T * K).
+# Performs all computation using FP32, but uses the original datatype for
+# inputs/outputs/gradients to conserve memory.
+
+class AttentionOp(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, q, k):
+        w = torch.einsum('ncq,nck->nqk', q.to(torch.float32), (k / np.sqrt(k.shape[1])).to(torch.float32)).softmax(dim=2).to(q.dtype)
+        ctx.save_for_backward(q, k, w)
+        return w
+
+    @staticmethod
+    def backward(ctx, dw):
+        q, k, w = ctx.saved_tensors
+        db = torch._softmax_backward_data(grad_output=dw.to(torch.float32), output=w.to(torch.float32), dim=2, input_dtype=torch.float32)
+        dq = torch.einsum('nck,nqk->ncq', k.to(torch.float32), db).to(q.dtype) / np.sqrt(k.shape[1])
+        dk = torch.einsum('ncq,nqk->nck', q.to(torch.float32), db).to(k.dtype) / np.sqrt(k.shape[1])
+        return dq, dk
+
+#----------------------------------------------------------------------------
 # Unified U-Net block with optional up/downsampling and self-attention.
 # Represents the union of all features employed by the DDPM++, NCSN++, and
 # ADM architectures.
@@ -158,8 +178,9 @@ class UNetBlock(torch.nn.Module):
         x = x * self.skip_scale
 
         if self.num_heads:
-            q, k, v = self.qkv(self.norm2(x)).reshape(x.shape[0] * self.num_heads, x.shape[1] // self.num_heads, 3, -1).permute(2, 0, 3, 1).unbind(0)
-            a = torch.nn.functional.scaled_dot_product_attention(q, k, v)
+            q, k, v = self.qkv(self.norm2(x)).reshape(x.shape[0] * self.num_heads, x.shape[1] // self.num_heads, 3, -1).unbind(2)
+            w = AttentionOp.apply(q, k)
+            a = torch.einsum('nqk,nck->ncq', w, v)
             x = self.proj(a.reshape(*x.shape)).add_(x)
             x = x * self.skip_scale
         return x
