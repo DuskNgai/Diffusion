@@ -113,7 +113,7 @@ class GaussianModelPipeline(DiffusionPipeline):
     def __call__(self,
         batch_size: int,
         num_inference_steps: int,
-        generator: Union[torch.Generator, list[torch.Generator]] | None = None
+        generator: torch.Generator | list[torch.Generator] | None = None
     ) -> torch.Tensor:
         # 0. Sample the initial noisy samples.
         sample = randn_tensor((batch_size, 2), generator=generator, device=self.device) * self.scheduler.init_noise_sigma
@@ -122,8 +122,8 @@ class GaussianModelPipeline(DiffusionPipeline):
         self.scheduler.set_timesteps(num_inference_steps)
 
         for timestep in self.progress_bar(self.scheduler.timesteps):
-            scale = self.scheduler.config.scale(timestep)
-            sigma = self.scheduler.config.sigma(timestep)
+            scale = self.scheduler.config.scale_fn(timestep)
+            sigma = self.scheduler.config.sigma_fn(timestep)
 
             # 2. Compute the score function of the GMM at the current sample.
             score = self.model(sample, scale, sigma)
@@ -134,8 +134,8 @@ class GaussianModelPipeline(DiffusionPipeline):
             elif self.scheduler.config.prediction_type == "sample":
                 output = (sigma ** 2 * score + sample) / scale
             elif self.scheduler.config.prediction_type == "velocity":
-                scale_deriv = self.scheduler.config.scale_deriv(timestep)
-                sigma_deriv = self.scheduler.config.sigma_deriv(timestep)
+                scale_deriv = self.scheduler.config.scale_deriv_fn(timestep)
+                sigma_deriv = self.scheduler.config.sigma_deriv_fn(timestep)
                 output = (scale_deriv / scale) * sample + (scale_deriv / scale - sigma_deriv / sigma) * sigma ** 2 * score
             else:
                 raise ValueError(f"Prediction type {self.scheduler.config.prediction_type} is not supported.")

@@ -25,14 +25,14 @@ class TrainingModule(LightningModule):
     def __init__(self,
         model: torch.nn.Module,
         criterion: torch.nn.Module,
-        noise_schedule: NoiseScheduler,
+        noise_scheduler: NoiseScheduler,
         cfg: DictConfig,
     ) -> None:
         super().__init__()
 
         self.model = torch.compile(model) if cfg.MODULE.COMPILE else model
         self.criterion = torch.compile(criterion) if cfg.MODULE.COMPILE else criterion
-        self.noise_schedule = torch.compile(noise_schedule) if cfg.MODULE.COMPILE else noise_schedule
+        self.noise_scheduler = torch.compile(noise_scheduler) if cfg.MODULE.COMPILE else noise_scheduler
 
         self.batch_size = cfg.DATALOADER.TRAIN.BATCH_SIZE
 
@@ -45,14 +45,14 @@ class TrainingModule(LightningModule):
         self.scheduler_params["num_epochs"] = cfg.TRAINER.MAX_EPOCHS
         self.step_on_epochs = cfg.MODULE.SCHEDULER.STEP_ON_EPOCHS
 
-        self.save_hyperparameters(ignore=["model", "criterion", "noise_schedule"])
+        self.save_hyperparameters(ignore=["model", "criterion", "noise_scheduler"])
 
     @classmethod
     def from_config(cls, cfg: DictConfig) -> dict[str, Any]:
         return {
             "model": build_model(cfg),
             "criterion": build_criterion(cfg),
-            "noise_schedule": build_noise_scheduler(cfg),
+            "noise_scheduler": build_noise_scheduler(cfg),
             "cfg": cfg,
         }
 
@@ -94,9 +94,9 @@ class TrainingModule(LightningModule):
     def forward(self, batch: Any) -> torch.Tensor:
         image, label = batch
         noise = torch.randn_like(image)
-        timestep = self.noise_schedule.sample_timestep(image)
+        timestep = self.noise_scheduler.sample_timestep(image)
 
-        noisy, scale, sigma = self.noise_schedule.add_noise(image, noise, timestep)
+        noisy, scale, sigma = self.noise_scheduler.add_noise(image, noise, timestep)
         output = self.model(noisy, scale, sigma, label)
         loss = self.criterion(output, image, noise, timestep)
         return loss

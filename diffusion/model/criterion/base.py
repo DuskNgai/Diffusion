@@ -10,6 +10,14 @@ __all__ = ["DiffusionCriterion"]
 class DiffusionCriterion(nn.Module, metaclass=ABCMeta):
     """
     The base class for diffusion model criterion.
+
+    Args:
+        sigma_data (`float`): The (estimated) standard deviation of the training data.
+        scale_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The scale function for the noisy data.
+        scale_deriv_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The derivative of the scale function.
+        sigma_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The noise level for the noisy data.
+        sigma_deriv_fn (`Callable[[float | torch.Tensor], float | torch.Tensor`): The derivative of the noise level.
+        prediction_type (`str`): The type of prediction to make. One of "sample", "epsilon", or "velocity".
     """
     def __init__(self,
         sigma_data: float,

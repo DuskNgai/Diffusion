@@ -19,7 +19,6 @@ class CIFAR10Dataset(Dataset):
     """
     A wrapper around torchvision.datasets.CIFAR10 to provide a consistent interface.
     """
-
     @configurable
     def __init__(self,
         root: str,

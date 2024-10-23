@@ -20,4 +20,3 @@ def build_cifar_transform(cfg: DictConfig, stage: RunningStage) -> v2.Compose:
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(mean=IMAGENET_INCEPTION_MEAN, std=IMAGENET_INCEPTION_STD),
     ])
-

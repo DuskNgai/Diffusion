@@ -22,7 +22,7 @@ MODEL:
 
   CRITERION:
     NAME: RectifiedFlowCriterion
-    PREDICTION_TYPE: sample
+    PREDICTION_TYPE: velocity
 
   NOISE_SCHEDULER:
     NAME: RectifiedFlowNoiseScheduler

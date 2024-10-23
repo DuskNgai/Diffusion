@@ -22,7 +22,7 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
         t_max (`float`):
             Maximum time parameter for the forward diffusion process.
         sigma_data (`float`, defaults to 1.0):
-            The (estimated) standard deviation of the data.
+            The (estimated) standard deviation of the training data.
             E.g., the normal distribution `N(mean_data, sigma_data ** 2 * I)` that is closest to the data distribution.
         scale_fn (`Callable[[Union[float, torch.Tensor]], Union[float, torch.Tensor]]`):
             The scale function for the noisy data. This was set to scale(t) = 1.
@@ -311,7 +311,7 @@ class GeneralContinuousDiffusionScheduler(SchedulerMixin, ConfigMixin):
     ) -> torch.Tensor:
         """
         Adds noise to the samples that meet the forward diffusion process,
-        i.e., `x_t = s(t) * x_0 + sigma(t) * noise`.
+        i.e., `x_t = scale(t) * x_0 + sigma(t) * noise`.
 
         Args:
             sample (`torch.Tensor`):
