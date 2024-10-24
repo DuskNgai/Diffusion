@@ -20,10 +20,8 @@ class EDMNoiseScheduler(NoiseScheduler):
     def __init__(self,
         timestep_mean: float,
         timestep_std: float,
-        sigma_data: float,
     ) -> None:
         super().__init__(
-            sigma_data=sigma_data,
             scale_fn=SAMPLER_FORMULATION_TABLE["EDM"]["scale_fn"],
             scale_deriv_fn=SAMPLER_FORMULATION_TABLE["EDM"]["scale_deriv_fn"],
             sigma_fn=SAMPLER_FORMULATION_TABLE["EDM"]["sigma_fn"],
@@ -38,7 +36,6 @@ class EDMNoiseScheduler(NoiseScheduler):
         return {
             "timestep_mean": cfg.MODEL.NOISE_SCHEDULER.TIMESTEP_MEAN,
             "timestep_std": cfg.MODEL.NOISE_SCHEDULER.TIMESTEP_STD,
-            "sigma_data": cfg.MODEL.SIGMA_DATA,
         }
 
     def sample_timestep(self, sample: torch.Tensor) -> torch.Tensor | torch.LongTensor:

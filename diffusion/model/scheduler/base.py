@@ -14,7 +14,6 @@ class NoiseScheduler(nn.Module, metaclass=ABCMeta):
         `x_t = scale(t) * x_0 + sigma(t) * noise`.
     """
     def __init__(self,
-        sigma_data: float,
         scale_fn: FunctionType,
         scale_deriv_fn: FunctionType,
         sigma_fn: FunctionType,
@@ -22,7 +21,6 @@ class NoiseScheduler(nn.Module, metaclass=ABCMeta):
     ) -> None:
         super().__init__()
 
-        self.sigma_data = sigma_data
         self.scale_fn = scale_fn
         self.scale_deriv_fn = scale_deriv_fn
         self.sigma_fn = sigma_fn
