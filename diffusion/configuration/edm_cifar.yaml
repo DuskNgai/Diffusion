@@ -17,26 +17,29 @@ DATASET:
     NAME: build_cifar_transform
 
 MODEL:
-  NAME: EDMPrecond
-  DEVICE: cuda
+  NAME: GeneralContinuousTimeDiffusion
 
   CRITERION:
     NAME: EDMCriterion
-    PREDICTION_TYPE: sample
 
   NOISE_SCHEDULER:
     NAME: EDMNoiseScheduler
     TIMESTEP_MEAN: -1.2
     TIMESTEP_STD: 1.2
 
-  IMG_SIZE: 32
-  IN_CHANS: 3
-  LABEL_DIM: 0
+  PREDICTION_TYPE: sample
   SIGMA_DATA: 0.5
-  MODEL_TYPE: DhariwalUNet
-  MODEL_KWARGS:
-    model_channels: 192
-    channel_mult: [1, 2, 3, 4]
+  REQUIRE_PRE_AND_POST_PROCESSING: True
+
+  BACKBONE:
+    NAME: EDMPrecond
+    IMG_SIZE: 32
+    IN_CHANS: 3
+    LABEL_DIM: 0
+    MODEL_TYPE: DhariwalUNet
+    MODEL_KWARGS:
+      model_channels: 192
+      channel_mult: [1, 2, 3, 4]
 
 MODULE:
   NAME: TrainingModule

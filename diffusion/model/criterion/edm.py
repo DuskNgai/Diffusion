@@ -5,7 +5,6 @@ import torch
 
 from coach_pl.configuration import configurable
 from coach_pl.model import CRITERION_REGISTRY
-from sampler import SAMPLER_FORMULATION_TABLE
 from .base import DiffusionCriterion
 
 __all__ = ["EDMCriterion"]
@@ -18,47 +17,35 @@ class EDMCriterion(DiffusionCriterion):
     """
     @configurable
     def __init__(self,
-        sigma_data: float,
         prediction_type: str,
+        sigma_data: float,
     ) -> None:
         super().__init__(
-            sigma_data=sigma_data,
-            scale_fn=SAMPLER_FORMULATION_TABLE["EDM"]["scale_fn"],
-            scale_deriv_fn=SAMPLER_FORMULATION_TABLE["EDM"]["scale_deriv_fn"],
-            sigma_fn=SAMPLER_FORMULATION_TABLE["EDM"]["sigma_fn"],
-            sigma_deriv_fn=SAMPLER_FORMULATION_TABLE["EDM"]["sigma_deriv_fn"],
             prediction_type=prediction_type,
         )
+
+        self.sigma_data = sigma_data
 
     @classmethod
     def from_config(cls, cfg: DictConfig) -> dict[str, Any]:
         return {
+            "prediction_type": cfg.MODEL.PREDICTION_TYPE,
             "sigma_data": cfg.MODEL.SIGMA_DATA,
-            "prediction_type": cfg.MODEL.CRITERION.PREDICTION_TYPE,
         }
 
-    def forward_sample(self,
-        prediction: torch.Tensor,
-        sample: torch.Tensor,
-        noise: torch.Tensor,
-        timestep: torch.Tensor
+    def forward(self,
+        input: torch.Tensor,
+        target: torch.Tensor,
+        scale: torch.Tensor,
+        sigma: torch.Tensor
     ) -> torch.Tensor:
-        weight = (self.sigma_fn(timestep) ** 2 + self.sigma_data ** 2) / ((self.sigma_fn(timestep) * self.sigma_data) ** 2)
-        return (weight * (prediction - sample).square()).mean()
-
-    def forward_epsilon(self,
-        prediction: torch.Tensor,
-        sample: torch.Tensor,
-        noise: torch.Tensor,
-        timestep: torch.Tensor
-    ) -> torch.Tensor:
-        weight = (self.sigma_fn(timestep) ** 2 + self.sigma_data ** 2) / (self.sigma_data ** 2)
-        return (weight * (prediction - noise).square()).mean()
-
-    def forward_velocity(self,
-        prediction: torch.Tensor,
-        sample: torch.Tensor,
-        noise: torch.Tensor,
-        timestep: torch.Tensor
-    ) -> torch.Tensor:
-        raise NotImplementedError
+        if self.prediction_type == "sample":
+            weight = ((scale * self.sigma_data) ** 2 + sigma ** 2) / ((sigma * self.sigma_data) ** 2)
+            return (weight * (input - target).square()).mean()
+        elif self.prediction_type == "epsilon":
+            weight = ((scale * self.sigma_data) ** 2 + sigma ** 2) / ((scale * self.sigma_data) ** 2)
+            return (weight * (input - target).square()).mean()
+        elif self.prediction_type == "velocity":
+            raise NotImplementedError
+        else:
+            raise KeyError(f"Unknown prediction type: {self.prediction_type}")

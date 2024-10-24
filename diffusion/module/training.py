@@ -92,13 +92,19 @@ class TrainingModule(LightningModule):
             scheduler.step_update(self.global_step, metric)
 
     def forward(self, batch: Any) -> torch.Tensor:
-        image, label = batch
-        noise = torch.randn_like(image)
-        timestep = self.noise_scheduler.sample_timestep(image)
+        # Sample cleans input and condition from dataset
+        clean, condition = batch
+        # Sample noises from Gaussian distribution
+        noise = torch.randn_like(clean)
+        # Sample timesteps from a predefined distribution
+        timestep = self.noise_scheduler.sample_timestep(clean)
 
-        noisy, scale, sigma = self.noise_scheduler.add_noise(image, noise, timestep)
-        output = self.model(noisy, scale, sigma, label)
-        loss = self.criterion(output, image, noise, timestep)
+        # Add noise to clean input
+        noisy, target, scale, sigma = self.noise_scheduler.add_noise(clean, noise, timestep)
+        # Forward noisy input and condition
+        output = self.model(noisy, scale, sigma, condition)
+        # Calculate loss with time-dependent scale and sigma
+        loss = self.criterion(output, target, scale, sigma)
         return loss
 
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:

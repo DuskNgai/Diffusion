@@ -15,7 +15,7 @@ import torch
 from torch.nn.functional import silu
 
 from coach_pl.configuration import configurable
-from coach_pl.model import MODEL_REGISTRY
+from diffusion.model.backbone.build import BACKBONE_REGISTRY
 
 #----------------------------------------------------------------------------
 # Unified routine for initializing weights and biases.
@@ -621,7 +621,7 @@ class iDDPMPrecond(torch.nn.Module):
 # Improved preconditioning proposed in the paper "Elucidating the Design
 # Space of Diffusion-Based Generative Models" (EDM).
 
-@MODEL_REGISTRY.register()
+@BACKBONE_REGISTRY.register()
 class EDMPrecond(ModelMixin):
     @configurable
     def __init__(self,
@@ -642,12 +642,12 @@ class EDMPrecond(ModelMixin):
     @classmethod
     def from_config(cls, cfg: DictConfig):
         return {
-            "img_resolution": cfg.MODEL.IMG_SIZE,
-            "img_channels": cfg.MODEL.IN_CHANS,
-            "label_dim": cfg.MODEL.LABEL_DIM,
+            "img_resolution": cfg.MODEL.BACKBONE.IMG_SIZE,
+            "img_channels": cfg.MODEL.BACKBONE.IN_CHANS,
+            "label_dim": cfg.MODEL.BACKBONE.LABEL_DIM,
             "sigma_data": cfg.MODEL.SIGMA_DATA,
-            "model_type": cfg.MODEL.MODEL_TYPE,
-            **cfg.MODEL.MODEL_KWARGS,
+            "model_type": cfg.MODEL.BACKBONE.MODEL_TYPE,
+            **cfg.MODEL.BACKBONE.MODEL_KWARGS,
         }
 
     def forward(self, x, scale, sigma, class_labels=None, **model_kwargs):
@@ -671,7 +671,7 @@ class EDMPrecond(ModelMixin):
 # Improved preconditioning proposed in the paper "Elucidating the Design
 # Space of Diffusion-Based Generative Models" (EDM).
 
-@MODEL_REGISTRY.register()
+@BACKBONE_REGISTRY.register()
 class RectifiedFlowPrecond(ModelMixin):
     @configurable
     def __init__(self,
@@ -692,12 +692,12 @@ class RectifiedFlowPrecond(ModelMixin):
     @classmethod
     def from_config(cls, cfg: DictConfig):
         return {
-            "img_resolution": cfg.MODEL.IMG_SIZE,
-            "img_channels": cfg.MODEL.IN_CHANS,
-            "label_dim": cfg.MODEL.LABEL_DIM,
+            "img_resolution": cfg.MODEL.BACKBONE.IMG_SIZE,
+            "img_channels": cfg.MODEL.BACKBONE.IN_CHANS,
+            "label_dim": cfg.MODEL.BACKBONE.LABEL_DIM,
             "sigma_data": cfg.MODEL.SIGMA_DATA,
-            "model_type": cfg.MODEL.MODEL_TYPE,
-            **cfg.MODEL.MODEL_KWARGS,
+            "model_type": cfg.MODEL.BACKBONE.MODEL_TYPE,
+            **cfg.MODEL.BACKBONE.MODEL_KWARGS,
         }
 
     def forward(self, x, scale, sigma, class_labels=None, **model_kwargs):

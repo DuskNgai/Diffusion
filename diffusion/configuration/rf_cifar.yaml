@@ -17,32 +17,35 @@ DATASET:
     NAME: build_cifar_transform
 
 MODEL:
-  NAME: RectifiedFlowPrecond
-  DEVICE: cuda
+  NAME: GeneralContinuousTimeDiffusion
 
   CRITERION:
     NAME: RectifiedFlowCriterion
-    PREDICTION_TYPE: velocity
 
   NOISE_SCHEDULER:
     NAME: RectifiedFlowNoiseScheduler
     TIMESTEP_MEAN: 0.0
     TIMESTEP_STD: 1.0
 
-  IMG_SIZE: 32
-  IN_CHANS: 3
-  LABEL_DIM: 0
+  PREDICTION_TYPE: velocity
   SIGMA_DATA: 0.5
-  MODEL_TYPE: DhariwalUNet
-  MODEL_KWARGS:
-    model_channels: 192
-    channel_mult: [1, 2, 3, 4]
+  REQUIRE_PRE_AND_POST_PROCESSING: False
+
+  BACKBONE:
+    IMG_SIZE: 32
+    IN_CHANS: 3
+    LABEL_DIM: 0
+    MODEL_TYPE: DhariwalUNet
+    MODEL_KWARGS:
+      model_channels: 192
+      channel_mult: [1, 2, 3, 4]
 
 MODULE:
   NAME: TrainingModule
   COMPILE: True
 
   OPTIMIZER:
+    NAME: RectifiedFlowPrecond
     NAME: Adam
     BASE_LR: 1.0e-3
     PARAMS:
