@@ -16,7 +16,7 @@ conda create -n diffusion python=3.11
 conda activate diffusion
 conda install pytorch torchvision pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install ipykernel lightning matplotlib "numpy<2.0.0" pandas rich tensorboard
-pip install deepspeed diffusers fvcore omegaconf timm
+pip install accelerate deepspeed diffusers fvcore omegaconf timm
 ```
 
 ## Usage
@@ -30,6 +30,8 @@ python train.py \
 --num-nodes <NUM_NODES> \
 <KEY_TO_MODIFY> <VALUE_TO_MODIFY>
 ```
+
+It takes approximately 14 hours to train EDM on the CIFAR-10 dataset for 200 epochs with 64 batch size using 1 RTX 3090 GPUs.
 
 We recommend naming the configuration file and output directory with the following format:
 ```txt

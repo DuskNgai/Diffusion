@@ -28,10 +28,7 @@ class GaussianModel(ModelMixin, ConfigMixin):
         `p(x) \propto exp(-0.5 * (x - mu)^T * cov^-1 * (x - mu))`,
     where `mu` is the mean vector and `cov` is the covariance matrix of the Gaussian distribution.
     """
-    def __init__(self,
-        mu: torch.Tensor,
-        cov: torch.Tensor
-    ) -> None:
+    def __init__(self, mu: torch.Tensor, cov: torch.Tensor) -> None:
         super().__init__()
 
         assert mu.dim() == 1 and cov.dim() == 2, "Support single Gaussian distribution only."
@@ -122,7 +119,7 @@ class GaussianModelPipeline(DiffusionPipeline):
         ) * self.scheduler.init_noise_sigma
 
         # 1. Initialize the scheduler.
-        self.scheduler.set_timesteps(num_inference_steps)
+        self.scheduler.set_timesteps(num_inference_steps, device=self.device)
 
         for timestep in self.progress_bar(self.scheduler.timesteps):
             scale = self.scheduler.config.scale_fn(timestep)

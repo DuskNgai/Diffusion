@@ -43,11 +43,12 @@ MODULE:
   COMPILE: True
 
   OPTIMIZER:
-    NAME: AdamW
+    NAME: Adam
     BASE_LR: 1.0e-3
     PARAMS:
-      WEIGHT_DECAY: 0.05
+      WEIGHT_DECAY: 0.0
       BETAS: [0.9, 0.999]
+      EPS: 1.0e-8
 
   SCHEDULER:
     NAME: cosine

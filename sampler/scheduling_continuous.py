@@ -8,6 +8,7 @@ import torch
 
 from sampler.formulation_table import FunctionType
 
+
 class GeneralContinuousTimeDiffusionScheduler(SchedulerMixin, ConfigMixin):
     """
     Implements general sampler for continuous diffusion models, whose forward process is defined as:

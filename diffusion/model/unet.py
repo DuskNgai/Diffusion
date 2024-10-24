@@ -10,6 +10,7 @@
 
 import numpy as np
 from omegaconf import DictConfig
+from diffusers.models import ModelMixin
 import torch
 from torch.nn.functional import silu
 
@@ -621,7 +622,7 @@ class iDDPMPrecond(torch.nn.Module):
 # Space of Diffusion-Based Generative Models" (EDM).
 
 @MODEL_REGISTRY.register()
-class EDMPrecond(torch.nn.Module):
+class EDMPrecond(ModelMixin):
     @configurable
     def __init__(self,
         img_resolution,                     # Image resolution.
@@ -671,7 +672,7 @@ class EDMPrecond(torch.nn.Module):
 # Space of Diffusion-Based Generative Models" (EDM).
 
 @MODEL_REGISTRY.register()
-class RectifiedFlowPrecond(torch.nn.Module):
+class RectifiedFlowPrecond(ModelMixin):
     @configurable
     def __init__(self,
         img_resolution,                     # Image resolution.
