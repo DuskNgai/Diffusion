@@ -365,7 +365,9 @@ class SongUNet(torch.nn.Module):
 # original implementation by Dhariwal and Nichol, available at
 # https://github.com/openai/guided-diffusion
 
+@BACKBONE_REGISTRY.register()
 class DhariwalUNet(torch.nn.Module):
+    @configurable
     def __init__(self,
         img_resolution,                     # Image resolution at input/output.
         in_channels,                        # Number of color channels at input.
@@ -428,9 +430,19 @@ class DhariwalUNet(torch.nn.Module):
         self.out_norm = GroupNorm(num_channels=cout)
         self.out_conv = Conv2d(in_channels=cout, out_channels=out_channels, kernel=3, **init_zero)
 
+    @classmethod
+    def from_config(cls, cfg: DictConfig):
+        return {
+            "img_resolution": cfg.MODEL.BACKBONE.IMG_SIZE,
+            "in_channels": cfg.MODEL.BACKBONE.IN_CHANS,
+            "out_channels": cfg.MODEL.BACKBONE.IN_CHANS,
+            "label_dim": cfg.MODEL.BACKBONE.LABEL_DIM,
+            **cfg.MODEL.BACKBONE.MODEL_KWARGS,
+        }
+
     def forward(self, x, noise_labels, class_labels, augment_labels=None):
         # Mapping.
-        emb = self.map_noise(noise_labels)
+        emb = self.map_noise(noise_labels.flatten())
         if self.map_augment is not None and augment_labels is not None:
             emb = emb + self.map_augment(augment_labels)
         emb = silu(self.map_layer0(emb))
@@ -616,99 +628,3 @@ class iDDPMPrecond(torch.nn.Module):
         index = torch.cdist(sigma.to(self.u.device).to(torch.float32).reshape(1, -1, 1), self.u.reshape(1, -1, 1)).argmin(2)
         result = index if return_index else self.u[index.flatten()].to(sigma.dtype)
         return result.reshape(sigma.shape).to(sigma.device)
-
-#----------------------------------------------------------------------------
-# Improved preconditioning proposed in the paper "Elucidating the Design
-# Space of Diffusion-Based Generative Models" (EDM).
-
-@BACKBONE_REGISTRY.register()
-class EDMPrecond(ModelMixin):
-    @configurable
-    def __init__(self,
-        img_resolution,                     # Image resolution.
-        img_channels,                       # Number of color channels.
-        label_dim       = 0,                # Number of class labels, 0 = unconditional.
-        sigma_data      = 0.5,              # Expected standard deviation of the training data.
-        model_type      = 'DhariwalUNet',   # Class name of the underlying model.
-        **model_kwargs,                     # Keyword arguments for the underlying model.
-    ):
-        super().__init__()
-        self.img_resolution = img_resolution
-        self.img_channels = img_channels
-        self.label_dim = label_dim
-        self.sigma_data = sigma_data
-        self.model = globals()[model_type](img_resolution=img_resolution, in_channels=img_channels, out_channels=img_channels, label_dim=label_dim, **model_kwargs)
-
-    @classmethod
-    def from_config(cls, cfg: DictConfig):
-        return {
-            "img_resolution": cfg.MODEL.BACKBONE.IMG_SIZE,
-            "img_channels": cfg.MODEL.BACKBONE.IN_CHANS,
-            "label_dim": cfg.MODEL.BACKBONE.LABEL_DIM,
-            "sigma_data": cfg.MODEL.SIGMA_DATA,
-            "model_type": cfg.MODEL.BACKBONE.MODEL_TYPE,
-            **cfg.MODEL.BACKBONE.MODEL_KWARGS,
-        }
-
-    def forward(self, x, scale, sigma, class_labels=None, **model_kwargs):
-        # x = x.to(torch.float32)
-        # sigma = sigma.to(torch.float32).reshape(-1, 1, 1, 1)
-        class_labels = None if self.label_dim == 0 else torch.zeros([1, self.label_dim], device=x.device) if class_labels is None else class_labels.to(torch.float32).reshape(-1, self.label_dim)
-
-        c_skip = self.sigma_data ** 2 / (sigma ** 2 + self.sigma_data ** 2)
-        c_out = sigma * self.sigma_data / (sigma ** 2 + self.sigma_data ** 2).sqrt()
-        c_in = 1 / (self.sigma_data ** 2 + sigma ** 2).sqrt()
-        c_noise = sigma.log() / 4
-
-        F_x = self.model((c_in * x), c_noise.flatten(), class_labels=class_labels, **model_kwargs)
-        D_x = c_skip * x + c_out * F_x.to(torch.float32)
-        return D_x
-
-    def round_sigma(self, sigma):
-        return torch.as_tensor(sigma)
-
-#----------------------------------------------------------------------------
-# Improved preconditioning proposed in the paper "Elucidating the Design
-# Space of Diffusion-Based Generative Models" (EDM).
-
-@BACKBONE_REGISTRY.register()
-class RectifiedFlowPrecond(ModelMixin):
-    @configurable
-    def __init__(self,
-        img_resolution,                     # Image resolution.
-        img_channels,                       # Number of color channels.
-        label_dim       = 0,                # Number of class labels, 0 = unconditional.
-        sigma_data      = 0.5,              # Expected standard deviation of the training data.
-        model_type      = 'DhariwalUNet',   # Class name of the underlying model.
-        **model_kwargs,                     # Keyword arguments for the underlying model.
-    ):
-        super().__init__()
-        self.img_resolution = img_resolution
-        self.img_channels = img_channels
-        self.label_dim = label_dim
-        self.sigma_data = sigma_data
-        self.model = globals()[model_type](img_resolution=img_resolution, in_channels=img_channels, out_channels=img_channels, label_dim=label_dim, **model_kwargs)
-
-    @classmethod
-    def from_config(cls, cfg: DictConfig):
-        return {
-            "img_resolution": cfg.MODEL.BACKBONE.IMG_SIZE,
-            "img_channels": cfg.MODEL.BACKBONE.IN_CHANS,
-            "label_dim": cfg.MODEL.BACKBONE.LABEL_DIM,
-            "sigma_data": cfg.MODEL.SIGMA_DATA,
-            "model_type": cfg.MODEL.BACKBONE.MODEL_TYPE,
-            **cfg.MODEL.BACKBONE.MODEL_KWARGS,
-        }
-
-    def forward(self, x, scale, sigma, class_labels=None, **model_kwargs):
-        # x = x.to(torch.float32)
-        # sigma = sigma.to(torch.float32).reshape(-1, 1, 1, 1)
-        class_labels = None if self.label_dim == 0 else torch.zeros([1, self.label_dim], device=x.device) if class_labels is None else class_labels.to(torch.float32).reshape(-1, self.label_dim)
-
-        F_x = self.model(x, sigma.flatten(), class_labels=class_labels, **model_kwargs)
-        return F_x
-
-    def round_sigma(self, sigma):
-        return torch.as_tensor(sigma)
-
-#----------------------------------------------------------------------------
