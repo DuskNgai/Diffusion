@@ -1,15 +1,15 @@
 from fvcore.common.registry import Registry
 from omegaconf import DictConfig
 
-from .base import NoiseScheduler
+from sampler import ContinuousTimeTrainingNoiseScheduler
 
 NOISE_SCHEDULER_REGISTRY = Registry("NOISE_SCHEDULER")
 NOISE_SCHEDULER_REGISTRY.__doc__ = """
-Registry for noise scheduler, which is a derived class of `NoiseScheduler`.
+Registry for noise scheduler, which is a derived class of `ContinuousTimeTrainingNoiseScheduler`.
 It adds noise to the input tensor based on the timestep.
 """
 
-def build_noise_scheduler(cfg: DictConfig) -> NoiseScheduler:
+def build_noise_scheduler(cfg: DictConfig) -> ContinuousTimeTrainingNoiseScheduler:
     """
     Build the noise scheduler defined by `cfg.MODEL.NOISE_SCHEDULER.NAME`.
     It does not load checkpoints from `cfg`.

@@ -4,13 +4,13 @@ import sys
 sys.path.append(Path(__file__).resolve().parents[1].as_posix())
 
 from diffusers import DiffusionPipeline
-from diffusers.configuration_utils import register_to_config, ConfigMixin
+from diffusers.configuration_utils import ConfigMixin
 from diffusers.models import ModelMixin
 from diffusers.utils.torch_utils import randn_tensor
 import torch
 import torch.nn as nn
 
-from sampler import GeneralContinuousTimeDiffusionScheduler, FunctionType
+from sampler import ContinuousTimeNoiseScheduler
 
 __all__ = [
     "GaussianModel",
@@ -58,34 +58,7 @@ class GaussianModel(ModelMixin, ConfigMixin):
         return score
 
 
-class GaussianModelScheduler(GeneralContinuousTimeDiffusionScheduler):
-    @register_to_config
-    def __init__(self,
-        t_min: float,
-        t_max: float,
-        sigma_data: float = 1.0,
-        scale_fn: FunctionType = lambda t: 1.0,
-        scale_deriv_fn: FunctionType = lambda t: 0.0,
-        sigma_fn: FunctionType = lambda t: t,
-        sigma_deriv_fn: FunctionType = lambda t: 1.0,
-        nsr_inv_fn: FunctionType = lambda nsr: nsr,
-        prediction_type: str = "epsilon",
-        algorithm_type: str = "ode",
-        timestep_schedule: str = "linear_lognsr",
-        **kwargs
-    ):
-        super().__init__(
-            t_min=t_min,
-            t_max=t_max,
-            sigma_data=sigma_data,
-            scale_fn=scale_fn,
-            sigma_fn=sigma_fn,
-            nsr_inv_fn=nsr_inv_fn,
-            prediction_type=prediction_type,
-            algorithm_type=algorithm_type,
-            timestep_schedule=timestep_schedule,
-            **kwargs
-        )
+GaussianModelScheduler = ContinuousTimeNoiseScheduler
 
 
 class GaussianModelPipeline(DiffusionPipeline):

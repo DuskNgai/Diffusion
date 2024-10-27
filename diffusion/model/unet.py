@@ -15,7 +15,7 @@ import torch
 from torch.nn.functional import silu
 
 from coach_pl.configuration import configurable
-from diffusion.model.backbone.build import BACKBONE_REGISTRY
+from coach_pl.model import MODEL_REGISTRY
 
 #----------------------------------------------------------------------------
 # Unified routine for initializing weights and biases.
@@ -365,8 +365,8 @@ class SongUNet(torch.nn.Module):
 # original implementation by Dhariwal and Nichol, available at
 # https://github.com/openai/guided-diffusion
 
-@BACKBONE_REGISTRY.register()
-class DhariwalUNet(torch.nn.Module):
+@MODEL_REGISTRY.register()
+class DhariwalUNet(ModelMixin):
     @configurable
     def __init__(self,
         img_resolution,                     # Image resolution at input/output.
@@ -384,6 +384,8 @@ class DhariwalUNet(torch.nn.Module):
         label_dropout       = 0,            # Dropout probability of class labels for classifier-free guidance.
     ):
         super().__init__()
+        self.img_channels = in_channels
+        self.img_resolution = img_resolution
         self.label_dropout = label_dropout
         emb_channels = model_channels * channel_mult_emb
         init = dict(init_mode='kaiming_uniform', init_weight=np.sqrt(1/3), init_bias=np.sqrt(1/3))
@@ -433,11 +435,11 @@ class DhariwalUNet(torch.nn.Module):
     @classmethod
     def from_config(cls, cfg: DictConfig):
         return {
-            "img_resolution": cfg.MODEL.BACKBONE.IMG_SIZE,
-            "in_channels": cfg.MODEL.BACKBONE.IN_CHANS,
-            "out_channels": cfg.MODEL.BACKBONE.IN_CHANS,
-            "label_dim": cfg.MODEL.BACKBONE.LABEL_DIM,
-            **cfg.MODEL.BACKBONE.MODEL_KWARGS,
+            "img_resolution": cfg.MODEL.IMG_SIZE,
+            "in_channels": cfg.MODEL.IN_CHANS,
+            "out_channels": cfg.MODEL.IN_CHANS,
+            "label_dim": cfg.MODEL.LABEL_DIM,
+            **cfg.MODEL.MODEL_KWARGS,
         }
 
     def forward(self, x, noise_labels, class_labels, augment_labels=None):

@@ -1,0 +1,12 @@
+MODEL:
+  NAME: DhariwalUNet
+
+  PREDICTION_TYPE: null
+  SIGMA_DATA: 0.5
+
+  IMG_SIZE: 32
+  IN_CHANS: 3
+  LABEL_DIM: 0
+  MODEL_KWARGS:
+    model_channels: 192
+    channel_mult: [1, 2, 3, 4]

@@ -17,35 +17,31 @@ DATASET:
     NAME: build_cifar_transform
 
 MODEL:
-  NAME: GeneralContinuousTimeDiffusion
+  NAME: DhariwalUNet
 
   CRITERION:
     NAME: RectifiedFlowCriterion
 
   NOISE_SCHEDULER:
-    NAME: RectifiedFlowNoiseScheduler
+    NAME: RectifiedFlowTrainingNoiseScheduler
     TIMESTEP_MEAN: 0.0
     TIMESTEP_STD: 1.0
 
   PREDICTION_TYPE: velocity
   SIGMA_DATA: 0.5
-  REQUIRE_PROCESSING: False
 
-  BACKBONE:
-    NAME: DhariwalUNet
-    IMG_SIZE: 32
-    IN_CHANS: 3
-    LABEL_DIM: 0
-    MODEL_KWARGS:
-      model_channels: 192
-      channel_mult: [1, 2, 3, 4]
+  IMG_SIZE: 32
+  IN_CHANS: 3
+  LABEL_DIM: 0
+  MODEL_KWARGS:
+    model_channels: 192
+    channel_mult: [1, 2, 3, 4]
 
 MODULE:
   NAME: TrainingModule
   COMPILE: True
 
   OPTIMIZER:
-    NAME: RectifiedFlowPrecond
     NAME: Adam
     BASE_LR: 1.0e-3
     PARAMS:

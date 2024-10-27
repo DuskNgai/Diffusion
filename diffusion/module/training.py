@@ -11,7 +11,8 @@ import torch
 from coach_pl.configuration import configurable
 from coach_pl.model import build_model, build_criterion
 from coach_pl.module import MODULE_REGISTRY
-from diffusion.model import build_noise_scheduler, NoiseScheduler
+from diffusion.model import build_noise_scheduler
+from sampler import ContinuousTimeNoiseScheduler
 
 __all__ = ["TrainingModule"]
 
@@ -25,14 +26,14 @@ class TrainingModule(LightningModule):
     def __init__(self,
         model: torch.nn.Module,
         criterion: torch.nn.Module,
-        noise_scheduler: NoiseScheduler,
+        noise_scheduler: ContinuousTimeNoiseScheduler,
         cfg: DictConfig,
     ) -> None:
         super().__init__()
 
         self.model = torch.compile(model) if cfg.MODULE.COMPILE else model
         self.criterion = torch.compile(criterion) if cfg.MODULE.COMPILE else criterion
-        self.noise_scheduler = torch.compile(noise_scheduler) if cfg.MODULE.COMPILE else noise_scheduler
+        self.noise_scheduler = noise_scheduler
 
         self.batch_size = cfg.DATALOADER.TRAIN.BATCH_SIZE
 
@@ -92,18 +93,15 @@ class TrainingModule(LightningModule):
             scheduler.step_update(self.global_step, metric)
 
     def forward(self, batch: Any) -> torch.Tensor:
-        # Sample clean inputs and condition from dataset
+        # Sampling samples, noises, and timesteps
         sample, condition = batch
-        # Sample noises from Gaussian distribution
         noise = torch.randn_like(sample)
-        # Sample timesteps from a predefined distribution
         timestep = self.noise_scheduler.sample_timestep(sample)
 
-        # Add noise to clean input
         noisy, target, scale, sigma = self.noise_scheduler.add_noise(sample, noise, timestep)
-        # Forward noisy input and condition
-        output = self.model(noisy, scale, sigma, condition)
-        # Calculate loss with time-dependent scale and sigma
+        processed_noisy, processed_scale, processed_sigma = self.noise_scheduler.preprocess(noisy, scale, sigma)
+        unprocessed_output = self.model(processed_noisy, processed_scale, processed_sigma, condition)
+        output = self.noise_scheduler.postprocess(noisy, unprocessed_output, scale, sigma)
         loss = self.criterion(output, target, scale, sigma)
         return loss
 

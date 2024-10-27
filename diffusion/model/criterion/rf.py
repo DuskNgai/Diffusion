@@ -5,7 +5,6 @@ import torch
 
 from coach_pl.configuration import configurable
 from coach_pl.model import CRITERION_REGISTRY
-from sampler import SAMPLER_FORMULATION_TABLE
 from .base import DiffusionCriterion
 
 __all__ = ["RectifiedFlowCriterion"]
