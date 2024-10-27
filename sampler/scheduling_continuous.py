@@ -327,7 +327,7 @@ class ContinuousTimeNoiseScheduler(BaseContinuousTimeNoiseScheduler):
                 sigma_ratio = sigma_t / sigma_u
                 x_t = (2 * sigma_ratio - scale_ratio) * x_u + 2 * (scale_t - sigma_ratio * scale_u) * model_output + ((sigma_u * scale_ratio) ** 2 - sigma_t ** 2) ** 0.5 * noise
             elif self.config.prediction_type == "velocity":
-                raise ValueError("Prediction type 'velocity' is not supported for SDEs.")
+                x_t = x_u + 2 * (t - u) * model_output + ((sigma_u * scale_ratio) ** 2 - sigma_t ** 2) ** 0.5 * noise
             else:
                 raise ValueError(f"Prediction type {self.config.prediction_type} is not supported.")
         else:
