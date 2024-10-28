@@ -27,11 +27,11 @@ class BaseEDMNoiseScheduler(BaseContinuousTimeNoiseScheduler):
 
     def postprocess(self, noisy: torch.Tensor, prediction: torch.Tensor, scale: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
         if self.config.prediction_type == "sample":
-            c_out = sigma * self.config.sigma_data / ((scale * self.config.sigma_data) ** 2 + sigma ** 2).sqrt()
+            c_out = (sigma * self.config.sigma_data) / ((scale * self.config.sigma_data) ** 2 + sigma ** 2).sqrt()
             c_skip = scale * self.config.sigma_data ** 2 / ((scale * self.config.sigma_data) ** 2 + sigma ** 2)
         elif self.config.prediction_type == "epsilon":
             c_out = (scale * self.config.sigma_data) / ((scale * self.config.sigma_data) ** 2 + sigma ** 2).sqrt()
-            c_skip = sigma / ((scale * self.config.sigma_data) ** 2 + self.config.sigma_data ** 2)
+            c_skip = sigma / ((scale * self.config.sigma_data) ** 2 + sigma ** 2)
         elif self.config.prediction_type == "velocity":
             raise NotImplementedError
         else:

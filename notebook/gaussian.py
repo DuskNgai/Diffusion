@@ -1,3 +1,8 @@
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parents[1].as_posix()))
+
 from diffusers import DiffusionPipeline
 from diffusers.configuration_utils import ConfigMixin
 from diffusers.models import ModelMixin
@@ -48,6 +53,7 @@ class GaussianModel(ModelMixin, ConfigMixin):
             torch.Tensor: The score of the GMM at the given x.
         """
 
+        # Using eigen decomposition + Woodbury identity to compute the inverse of the covariance matrix is slower than using the direct inverse.
         cov = torch.inverse((scale ** 2) * self.cov + (sigma ** 2) * torch.eye(self.cov.shape[-1], device=self.cov.device))
         score = torch.einsum("ij,bj->bi", cov, scale * self.mu - x) # [B, 2]
         return score

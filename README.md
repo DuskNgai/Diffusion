@@ -1,5 +1,9 @@
 # Diffusion
 
+This repository contains code related to Diffusion models and its extensions.
+- [Elucidating the Design Space of Diffusion-Based Generative Models](https://arxiv.org/abs/2206.00364)
+- [Flow Straight and Fast: Learning to Generate and Transfer Data with Rectified Flow](https://arxiv.org/abs/2209.03003)
+
 ## Setup
 
 First, download the codebase and the submodules:
