@@ -22,6 +22,7 @@ class BaseContinuousTimeNoiseScheduler(SchedulerMixin, ConfigMixin):
         sigma_deriv_fn: FunctionType = lambda t: 1.0,
         nsr_inv_fn: FunctionType = lambda nsr: nsr,
         prediction_type: str = "epsilon",
+        **kwargs,
     ):
         assert scale_fn(0.0) == 1.0, "The scale function should be 1.0 at t = 0."
         assert sigma_fn(0.0) == 0.0, "The sigma function should be 0.0 at t = 0."
@@ -53,6 +54,7 @@ class ContinuousTimeTrainingNoiseScheduler(BaseContinuousTimeNoiseScheduler):
         sigma_deriv_fn: FunctionType = lambda t: 1.0,
         nsr_inv_fn: FunctionType = lambda nsr: nsr,
         prediction_type: str = "epsilon",
+        **kwargs,
     ):
         super().__init__(
             sigma_data=sigma_data,
@@ -303,6 +305,7 @@ class ContinuousTimeNoiseScheduler(BaseContinuousTimeNoiseScheduler):
             `torch.Tensor`:
                 A previous instance of a sample created by the diffusion process.
         """
+        # TODO: 0.0 or self.config.t_min?
         t, u = self.timesteps[self.step_index + 1] if self.step_index < self.num_inference_steps - 1 else 0.0, self.timesteps[self.step_index]
         scale_t, scale_u = self.config.scale_fn(t), self.config.scale_fn(u)
         sigma_t, sigma_u = self.config.sigma_fn(t), self.config.sigma_fn(u)

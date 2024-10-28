@@ -1,8 +1,3 @@
-from pathlib import Path
-import sys
-
-sys.path.append(Path(__file__).resolve().parents[1].as_posix())
-
 from diffusers import DiffusionPipeline
 from diffusers.configuration_utils import ConfigMixin
 from diffusers.models import ModelMixin
@@ -63,7 +58,7 @@ GaussianModelScheduler = ContinuousTimeNoiseScheduler
 
 class GaussianModelPipeline(DiffusionPipeline):
     """
-    The Gaussian Mixture Model (GMM) pipeline is a simple example of the Diffusion Pipeline.
+    The Gaussian Model (GM) pipeline is a simple example of the Diffusion Pipeline.
 
     The relation ship between the score function and the prediction type is as follows:
         - If the prediction type is "epsilon", then `epsilon = - sigma * score`.
