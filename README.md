@@ -35,7 +35,7 @@ python train.py \
 <KEY_TO_MODIFY> <VALUE_TO_MODIFY>
 ```
 
-It takes approximately 14 hours to train EDM on the CIFAR-10 dataset for 200 epochs with 64 batch size using 1 RTX 3090 GPUs.
+It takes approximately 14 hours to train UNet on the CIFAR-10 dataset for 200 epochs with 64 batch size using 1 RTX 3090 GPUs.
 
 We recommend naming the configuration file and output directory with the following format:
 ```txt

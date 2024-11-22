@@ -70,7 +70,7 @@ class ContinuousTimeTrainingNoiseScheduler(BaseContinuousTimeNoiseScheduler):
         sample: torch.Tensor,
         noise: torch.Tensor,
         timestep: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Adds noise to the samples that meet the forward diffusion process,
         i.e., `x_t = scale(t) * x_0 + sigma(t) * noise`.
@@ -86,6 +86,8 @@ class ContinuousTimeTrainingNoiseScheduler(BaseContinuousTimeNoiseScheduler):
         Returns:
             `torch.Tensor`:
                 The noisy samples.
+            `torch.Tensor`:
+                The target of the backward process.
             `torch.Tensor`:
                 The scale of the samples.
             `torch.Tensor`:
