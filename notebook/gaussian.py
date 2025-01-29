@@ -54,8 +54,9 @@ class GaussianModel(ModelMixin, ConfigMixin):
         """
 
         # Using eigen decomposition + Woodbury identity to compute the inverse of the covariance matrix is slower than using the direct inverse.
+        # See https://arxiv.org/pdf/2311.10892 for more details.
         cov = torch.inverse((scale ** 2) * self.cov + (sigma ** 2) * torch.eye(self.cov.shape[-1], device=self.cov.device))
-        score = torch.einsum("ij,bj->bi", cov, scale * self.mu - x) # [B, 2]
+        score = torch.einsum("ij, bj -> bi", cov, scale * self.mu - x) # [B, 2]
         return score
 
 
