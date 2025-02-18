@@ -16,7 +16,7 @@ __all__ = [
     "GaussianModel",
     "GaussianModelScheduler",
     "GaussianModelPipeline",
-] 
+]
 
 
 class GaussianModel(ModelMixin, ConfigMixin):
@@ -28,6 +28,7 @@ class GaussianModel(ModelMixin, ConfigMixin):
         `p(x) \propto exp(-0.5 * (x - mu)^T * cov^-1 * (x - mu))`,
     where `mu` is the mean vector and `cov` is the covariance matrix of the Gaussian distribution.
     """
+
     def __init__(self, mu: torch.Tensor, cov: torch.Tensor) -> None:
         super().__init__()
 
@@ -81,7 +82,8 @@ class GaussianModelPipeline(DiffusionPipeline):
         self.register_modules(model=model, scheduler=scheduler)
 
     @torch.inference_mode()
-    def __call__(self,
+    def __call__(
+        self,
         batch_size: int,
         num_inference_steps: int,
         generator: torch.Generator | list[torch.Generator] | None = None
@@ -90,7 +92,7 @@ class GaussianModelPipeline(DiffusionPipeline):
         sample = randn_tensor(
             (batch_size, 2),
             generator=generator,
-            device=self.device
+            device=self.device,
         ) * self.scheduler.init_noise_sigma
 
         # 1. Initialize the scheduler.

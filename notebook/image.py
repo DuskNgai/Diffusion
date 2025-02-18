@@ -19,7 +19,8 @@ class UnconditionalGenerationPipeline(DiffusionPipeline):
         self.register_modules(model=model, scheduler=scheduler)
 
     @torch.inference_mode()
-    def __call__(self,
+    def __call__(
+        self,
         batch_size: int,
         num_inference_steps: int,
         generator: torch.Generator | list[torch.Generator] | None = None

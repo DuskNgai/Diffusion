@@ -9,15 +9,15 @@ from diffusers.utils.torch_utils import randn_tensor
 import torch
 import torch.nn as nn
 
-from sampler import ContinuousTimeNoiseScheduler
+__all__ = ["PointSetModel"]
 
-__all__ = ["PointSetModel"] 
 
 class PointSetModel(ModelMixin, ConfigMixin):
     """
     The Point Set Model is a probabilistic model that assumes all the data points are generated from a mixture of delta distributions.
     Its score function is known in closed form and can be used to validate the implementation of the sampler.
     """
+
     def __init__(self, num_samples: int, dim: int) -> None:
         super().__init__()
 

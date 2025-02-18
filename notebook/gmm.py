@@ -11,7 +11,9 @@ class GaussianMixtureModel(ModelMixin, ConfigMixin):
     The Gaussian Mixture Model (GMM) is a probabilistic model that assumes all the data points are generated from a mixture of Gaussian distributions.
     Its score function is known in closed form and can be used to validate the implementation of the sampler.
     """
-    def __init__(self,
+
+    def __init__(
+        self,
         num_groups_per_model: int,
         num_gs_per_group: int,
         model_radius: float,
