@@ -15,17 +15,20 @@ from sampler import (
 
 __all__ = [
     "EDMTrainingNoiseScheduler",
-    "EDMNoiseScheduler"
+    "EDMNoiseScheduler",
 ]
 
 
 class BaseEDMNoiseScheduler(BaseContinuousTimeNoiseScheduler):
+
     def preprocess(self, noisy: torch.Tensor, scale: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
         c_in = 1.0 / ((scale * self.config.sigma_data) ** 2 + sigma ** 2).sqrt()
         c_noise = 0.25 * sigma.log()
         return c_in * noisy, scale, c_noise
 
-    def postprocess(self, noisy: torch.Tensor, prediction: torch.Tensor, scale: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
+    def postprocess(
+        self, noisy: torch.Tensor, prediction: torch.Tensor, scale: torch.Tensor, sigma: torch.Tensor
+    ) -> torch.Tensor:
         if self.config.prediction_type == "sample":
             c_out = (sigma * self.config.sigma_data) / ((scale * self.config.sigma_data) ** 2 + sigma ** 2).sqrt()
             c_skip = scale * self.config.sigma_data ** 2 / ((scale * self.config.sigma_data) ** 2 + sigma ** 2)
@@ -45,9 +48,11 @@ class EDMTrainingNoiseScheduler(ContinuousTimeTrainingNoiseScheduler, BaseEDMNoi
     """
     Noise scheduler for EDM Diffusion model.
     """
+
     @configurable
     @register_to_config
-    def __init__(self,
+    def __init__(
+        self,
         timestep_mean: float,
         timestep_std: float,
         prediction_type: str,
@@ -74,14 +79,18 @@ class EDMTrainingNoiseScheduler(ContinuousTimeTrainingNoiseScheduler, BaseEDMNoi
         }
 
     def sample_timestep(self, sample: torch.Tensor) -> torch.Tensor | torch.LongTensor:
-        timestep = torch.exp(torch.randn(sample.shape[0], device=sample.device) * self.config.timestep_std + self.config.timestep_mean)
+        timestep = torch.exp(
+            torch.randn(sample.shape[0], device=sample.device) * self.config.timestep_std + self.config.timestep_mean
+        )
         while timestep.dim() < sample.dim():
             timestep = timestep.unsqueeze(-1)
         return timestep
 
 
 class EDMNoiseScheduler(ContinuousTimeNoiseScheduler, BaseEDMNoiseScheduler):
-    def __init__(self,
+
+    def __init__(
+        self,
         t_min: float = 0.002,
         t_max: float = 80.0,
         sigma_data: float = 1.0,

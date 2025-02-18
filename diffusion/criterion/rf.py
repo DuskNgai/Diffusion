@@ -4,7 +4,7 @@ from omegaconf import DictConfig
 import torch
 
 from coach_pl.configuration import configurable
-from coach_pl.model import CRITERION_REGISTRY
+from coach_pl.criterion import CRITERION_REGISTRY
 from .base import DiffusionCriterion
 
 __all__ = ["RectifiedFlowCriterion"]
@@ -15,13 +15,13 @@ class RectifiedFlowCriterion(DiffusionCriterion):
     """
     Criterion for Rectified Flow Diffusion model.
     """
+
     @configurable
-    def __init__(self,
+    def __init__(
+        self,
         prediction_type: str,
     ) -> None:
-        super().__init__(
-            prediction_type=prediction_type,
-        )
+        super().__init__(prediction_type=prediction_type)
 
     @classmethod
     def from_config(cls, cfg: DictConfig) -> dict[str, Any]:
@@ -29,10 +29,7 @@ class RectifiedFlowCriterion(DiffusionCriterion):
             "prediction_type": cfg.MODEL.PREDICTION_TYPE,
         }
 
-    def forward(self,
-        input: torch.Tensor,
-        target: torch.Tensor,
-        scale: torch.Tensor,
-        sigma: torch.Tensor
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor, scale: torch.Tensor, sigma: torch.Tensor
     ) -> torch.Tensor:
         return (input - target).square().mean()

@@ -1,5 +1,8 @@
 _BASE_: ../../coach_pl/configuration/base.yaml
 
+CRITERION:
+  NAME: EDMCriterion
+
 DATALOADER:
   PIN_MEMORY: True
   DROP_LAST: False
@@ -18,9 +21,6 @@ DATASET:
 
 MODEL:
   NAME: DhariwalUNet
-
-  CRITERION:
-    NAME: EDMCriterion
 
   NOISE_SCHEDULER:
     NAME: EDMTrainingNoiseScheduler
@@ -55,6 +55,10 @@ MODULE:
     PARAMS:
       WARMUP_LR: 1.0e-6
       WARMUP_EPOCHS: 40
+
+  EMA:
+    ENABLED: True
+    BASE_DECAY: 0.99
 
 TRAINER:
   STRATEGY: ddp         # Set to `auto`, `ddp`, `deepspeed_stage_2`, `deepspeed_stage_3` ...

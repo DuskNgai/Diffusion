@@ -13,8 +13,8 @@ from sampler import (
 )
 
 __all__ = [
-    "RectifiedFlowTrainingNoiseScheduler"
-    "RectifiedFlowNoiseScheduler"
+    "RectifiedFlowTrainingNoiseScheduler",
+    "RectifiedFlowNoiseScheduler",
 ]
 
 
@@ -23,9 +23,11 @@ class RectifiedFlowTrainingNoiseScheduler(ContinuousTimeTrainingNoiseScheduler):
     """
     Noise scheduler for training Rectified Flow model.
     """
+
     @configurable
     @register_to_config
-    def __init__(self,
+    def __init__(
+        self,
         timestep_mean: float,
         timestep_std: float,
         prediction_type: str,
@@ -52,14 +54,18 @@ class RectifiedFlowTrainingNoiseScheduler(ContinuousTimeTrainingNoiseScheduler):
         }
 
     def sample_timestep(self, sample: torch.Tensor) -> torch.Tensor | torch.LongTensor:
-        timestep = torch.sigmoid(torch.randn(sample.shape[0], device=sample.device) * self.config.timestep_std + self.config.timestep_mean)
+        timestep = torch.sigmoid(
+            torch.randn(sample.shape[0], device=sample.device) * self.config.timestep_std + self.config.timestep_mean
+        )
         while timestep.dim() < sample.dim():
             timestep = timestep.unsqueeze(-1)
         return timestep
 
 
 class RectifiedFlowNoiseScheduler(ContinuousTimeNoiseScheduler):
-    def __init__(self,
+
+    def __init__(
+        self,
         t_min: float = 0.0001,
         t_max: float = 0.9999,
         sigma_data: float = 1.0,

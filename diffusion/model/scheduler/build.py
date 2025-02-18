@@ -9,6 +9,7 @@ Registry for noise scheduler, which is a derived class of `ContinuousTimeTrainin
 It adds noise to the input tensor based on the timestep.
 """
 
+
 def build_noise_scheduler(cfg: DictConfig) -> ContinuousTimeTrainingNoiseScheduler:
     """
     Build the noise scheduler defined by `cfg.MODEL.NOISE_SCHEDULER.NAME`.
